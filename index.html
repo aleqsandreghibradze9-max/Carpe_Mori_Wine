@@ -92,7 +92,8 @@ canvas{touch-action:none}
 .df{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 14px;margin-bottom:8px}
 .df-lbl{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
 .df-val{font-size:14px;color:var(--text);line-height:1.5}
-.del-btn{width:100%;padding:13px;background:var(--surface);border:1px solid var(--accent);color:var(--accent);font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border-radius:4px;cursor:pointer;margin-top:16px}
+.del-btn{width:100%;padding:13px;background:var(--surface);border:1px solid var(--accent);color:var(--accent);font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border-radius:4px;cursor:pointer;margin-top:8px}
+.edit-btn{width:100%;padding:13px;background:var(--accent2);color:#1a1208;font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border-radius:4px;cursor:pointer;margin-top:16px;border:none}
 
 /* EMPTY */
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}
@@ -194,6 +195,7 @@ let rating = 0;
 let selectedColor = null;
 let wheelVals = new Array(16).fill(0);
 let detailEntry = null;
+let editingIndex = -1;
 let dragging = false;
 
 function save(e){ entries=e; localStorage.setItem('wine_entries',JSON.stringify(e)); }
@@ -230,6 +232,7 @@ function startNew(){
     sampled:new Date().toISOString().split('T')[0],
     appearance:'',nose:'',taste:'',finish:'',opinion:''};
   rating=0; selectedColor=null; wheelVals=new Array(16).fill(0);
+  editingIndex=-1;
   go('taste');
 }
 
@@ -277,6 +280,7 @@ function renderDetail(){
     ${fields.map(([l,v])=>`<div class="df"><div class="df-lbl">${l}</div><div class="df-val">${v}</div></div>`).join('')}
     <div class="sec-lbl" style="margin-top:16px;margin-bottom:8px">Flavor Profile</div>
     <div class="ww"><canvas id="detailCanvas" width="280" height="280" style="max-width:100%"></canvas></div>
+    <button class="edit-btn" onclick="editEntry(${detailEntry})">✎ Edit Entry</button>
     <button class="del-btn" onclick="deleteEntry(${detailEntry})">Delete Entry</button>`;
 
   setTimeout(()=>drawWheelOn('detailCanvas', e.wheel||new Array(16).fill(0), true), 50);
@@ -288,18 +292,34 @@ function deleteEntry(i){
   go('cellar'); showToast('Entry deleted');
 }
 
+function editEntry(i){
+  const e = entries[i];
+  // Load entry data into form
+  form = {
+    grape: e.grape||'', winery: e.winery||'', vintage: e.vintage||'',
+    origin: e.origin||'', price: e.price||'', sampled: e.sampled||'',
+    appearance: e.appearance||'', nose: e.nose||'', taste: e.taste||'',
+    finish: e.finish||'', opinion: e.opinion||''
+  };
+  rating = e.rating||0;
+  selectedColor = e.color||null;
+  wheelVals = e.wheel ? e.wheel.slice() : new Array(16).fill(0);
+  editingIndex = i;
+  go('taste');
+}
+
 // ===== TASTE FORM =====
 function renderTaste(){
   const s=document.getElementById('screen');
   s.innerHTML=`
   <div class="sec-lbl">Wine Info</div>
   <div class="fg">
-    <div class="fr"><span class="fl">Grape</span><input class="fi" id="f-grape" type="text" autocomplete="off" value="" placeholder="Grape..."></div>
-    <div class="fr"><span class="fl">Winery</span><input class="fi" id="f-winery" type="text" autocomplete="off" value="" placeholder="Winery..."></div>
-    <div class="fr"><span class="fl">Vintage</span><input class="fi" id="f-vintage" type="text" autocomplete="off" value="" placeholder="Year..."></div>
-    <div class="fr"><span class="fl">Origin</span><input class="fi" id="f-origin" type="text" autocomplete="off" value="" placeholder="Region..."></div>
-    <div class="fr"><span class="fl">Price</span><input class="fi" id="f-price" type="text" autocomplete="off" value="" placeholder="Price..."></div>
-    <div class="fr"><span class="fl">Sampled</span><input class="fi" id="f-sampled" type="text" autocomplete="off" value="" placeholder="Date..."></div>
+    <div class="fr"><span class="fl">Grape</span><input class="fi" id="f-grape" type="text" autocomplete="off" placeholder="Grape..."></div>
+    <div class="fr"><span class="fl">Winery</span><input class="fi" id="f-winery" type="text" autocomplete="off" placeholder="Winery..."></div>
+    <div class="fr"><span class="fl">Vintage</span><input class="fi" id="f-vintage" type="text" autocomplete="off" placeholder="Year..."></div>
+    <div class="fr"><span class="fl">Origin</span><input class="fi" id="f-origin" type="text" autocomplete="off" placeholder="Region..."></div>
+    <div class="fr"><span class="fl">Price</span><input class="fi" id="f-price" type="text" autocomplete="off" placeholder="Price..."></div>
+    <div class="fr"><span class="fl">Sampled</span><input class="fi" id="f-sampled" type="text" autocomplete="off" placeholder="Date..."></div>
   </div>
 
   <div class="sec-lbl">Rating</div>
@@ -333,9 +353,16 @@ function renderTaste(){
   <div class="w-hint">TAP OR DRAG ALONG EACH AXIS</div>
   <button class="reset" onclick="wheelVals=new Array(16).fill(0);drawWheelOn('wheelCanvas',wheelVals,false)">Reset Wheel</button>
 
-  <button class="save-btn" onclick="saveEntry()">Save to Cellar 🍷</button>`;
+  <button class="save-btn" onclick="saveEntry()">${editingIndex>=0?"Update Entry 🍷":"Save to Cellar 🍷"}</button>`;
 
   setTimeout(()=>{
+    // Fill form values (works for both new entry and edit)
+    ['grape','winery','vintage','origin','price','sampled','appearance','nose','taste','finish'].forEach(k=>{
+      const el = document.getElementById('f-'+k);
+      if(el && form[k]) el.value = form[k];
+    });
+    const op = document.getElementById('f-opinion');
+    if(op && form.opinion) op.value = form.opinion;
     initWheelInteraction('wheelCanvas');
     drawWheelOn('wheelCanvas', wheelVals, false);
   },50);
@@ -359,7 +386,7 @@ function selectColor(name,hex,el){
 
 function saveEntry(){
   var data = {
-    id: Date.now(),
+    id: editingIndex>=0 ? entries[editingIndex].id : Date.now(),
     grape: (document.getElementById('f-grape')||{}).value || '',
     winery: (document.getElementById('f-winery')||{}).value || '',
     vintage: (document.getElementById('f-vintage')||{}).value || '',
@@ -375,9 +402,15 @@ function saveEntry(){
     color: selectedColor,
     wheel: wheelVals.slice()
   };
-  entries.unshift(data);
+  if(editingIndex>=0){
+    entries[editingIndex] = data;
+    editingIndex = -1;
+    showToast('Updated 🍷');
+  } else {
+    entries.unshift(data);
+    showToast('Saved 🍷');
+  }
   try { localStorage.setItem('wine_entries', JSON.stringify(entries)); } catch(e){}
-  showToast('Saved 🍷');
   setTimeout(function(){ go('cellar'); }, 600);
 }
 
