@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sommelier">
+<meta name="theme-color" content="#9b2335">
+<link rel="manifest" href="/Carpe_Mori_Wine/manifest.json">
+<link rel="apple-touch-icon" href="/Carpe_Mori_Wine/icon-192.png">
+<title>Sommelier — Wine Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400;1,600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#141210; --surface:#1e1b18; --surface2:#26221e;
+  --border:#3a3530; --accent:#9b2335; --accent2:#c8963e;
+  --text:#e8e0d4; --text2:#9a8f82; --text3:#5a524a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Courier Prime','Courier New',monospace}
+.app{display:flex;flex-direction:column;height:100dvh;max-width:430px;margin:0 auto;position:relative}
+
+/* HEADER */
+.hdr{padding:14px 20px 10px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.hdr-title{font-family:'Playfair Display',serif;font-style:italic;font-size:21px;letter-spacing:.02em}
+.hdr-sub{font-size:9px;color:var(--text3);letter-spacing:.25em;text-transform:uppercase;margin-top:1px}
+.icon-btn{background:var(--accent);color:var(--text);border:none;border-radius:50%;width:38px;height:38px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .1s}
+.icon-btn:active{transform:scale(.9)}
+.back-btn{background:var(--surface);border:1px solid var(--border);color:var(--text2);border-radius:50%;width:38px;height:38px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* SCREEN */
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 16px 28px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+
+/* NAV */
+.nav{display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 8px;border:none;background:transparent;color:var(--text3);cursor:pointer;gap:3px;transition:color .2s}
+.nav-btn.on{color:var(--accent2)}
+.nav-icon{font-size:20px;line-height:1}
+.nav-lbl{font-size:8px;letter-spacing:.15em;text-transform:uppercase}
+
+/* FORM */
+.sec-lbl{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding-left:2px}
+.fg{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;margin-bottom:20px}
+.fr{display:flex;align-items:center;border-bottom:1px solid var(--border);min-height:48px}
+.fr:last-child{border-bottom:none}
+.fl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);padding:0 12px;width:90px;flex-shrink:0;border-right:1px solid var(--border);min-height:48px;display:flex;align-items:center}
+.fi{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Courier Prime',monospace;font-size:14px;padding:12px}
+.fi::placeholder{color:var(--text3);font-size:12px}
+textarea.fi{resize:none;min-height:80px;line-height:1.6}
+
+/* STARS */
+.star{font-size:30px;cursor:pointer;transition:color .15s,transform .1s;line-height:1}
+.star:active{transform:scale(1.3)}
+
+/* COLOR GRID */
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+.ct{background:var(--surface);border:1.5px solid var(--border);border-radius:6px;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:border-color .2s,background .2s}
+.ct.sel{border-color:var(--accent2);background:rgba(200,150,62,.1)}
+.ct:active{opacity:.8}
+.cb{width:32px;height:44px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:1px solid rgba(255,255,255,.1)}
+.cn{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2)}
+.ct.sel .cn{color:var(--accent2)}
+
+/* WHEEL */
+.ww{display:flex;justify-content:center;padding:12px 8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:6px}
+canvas{touch-action:none}
+.w-hint{text-align:center;font-size:9px;color:var(--text3);letter-spacing:.15em;margin-bottom:8px}
+.reset{display:block;margin:0 auto 20px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:9px 22px;border-radius:3px;cursor:pointer}
+
+/* SAVE */
+.save-btn{width:100%;background:var(--accent);color:var(--text);border:none;border-radius:4px;padding:16px;font-family:'Playfair Display',serif;font-style:italic;font-size:17px;letter-spacing:.08em;cursor:pointer;transition:background .2s,transform .1s}
+.save-btn:active{transform:scale(.98);background:#7a1a28}
+
+/* CARDS */
+.ec{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .2s}
+.ec:active{border-color:var(--accent2)}
+.ec-bar{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+.ec-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
+.ec-name{font-family:'Playfair Display',serif;font-style:italic;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ec-meta{font-size:10px;color:var(--text2);margin-top:2px}
+.ec-stars{font-size:12px;color:var(--accent2);flex-shrink:0}
+
+/* DETAIL */
+.df{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px 14px;margin-bottom:8px}
+.df-lbl{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--text3);margin-bottom:3px}
+.df-val{font-size:14px;color:var(--text);line-height:1.5}
+.del-btn{width:100%;padding:13px;background:var(--surface);border:1px solid var(--accent);color:var(--accent);font-family:'Courier Prime',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;border-radius:4px;cursor:pointer;margin-top:16px}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-ico{font-size:52px;margin-bottom:14px;opacity:.35}
+.empty-txt{font-size:11px;letter-spacing:.15em;text-transform:uppercase;line-height:1.9}
+
+/* TOAST */
+.toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent2);color:#1a1208;padding:10px 22px;border-radius:30px;font-size:11px;letter-spacing:.15em;text-transform:uppercase;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* INSTALL BANNER */
+.install-bar{background:var(--surface2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.install-bar span{font-size:11px;color:var(--text2);line-height:1.4}
+.install-bar button{background:var(--accent2);color:#1a1208;border:none;border-radius:3px;padding:7px 14px;font-family:'Courier Prime',monospace;font-size:10px;letter-spacing:.1em;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.install-bar .x{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:2px 6px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- INSTALL BANNER (shown when installable) -->
+  <div class="install-bar" id="installBar" style="display:none">
+    <span>📲 Install Sommelier as an app</span>
+    <button id="installBtn">Install</button>
+    <button class="x" onclick="document.getElementById('installBar').style.display='none'">×</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div>
+      <div class="hdr-title">Sommelier</div>
+      <div class="hdr-sub">Wine Journal</div>
+    </div>
+    <button class="icon-btn" id="headerBtn" onclick="headerAction()">+</button>
+  </div>
+
+  <!-- SCREEN -->
+  <div class="screen" id="screen">
+    <!-- content injected by JS -->
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <button class="nav-btn on" id="nav-cellar" onclick="go('cellar')">
+      <span class="nav-icon">🗄</span>
+      <span class="nav-lbl">Cellar</span>
+    </button>
+    <button class="nav-btn" id="nav-taste" onclick="startNew()">
+      <span class="nav-icon">🍷</span>
+      <span class="nav-lbl">Taste</span>
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== PWA =====
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Carpe_Mori_Wine/sw.js', {scope: '/Carpe_Mori_Wine/'});
+}
+
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBar').style.display = 'flex';
+});
+
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBar').style.display = 'none';
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBar').style.display = 'none';
+  showToast('App installed! 🍷');
+});
+
+// ===== STATE =====
+const COLORS = [
+  {name:'Brown',hex:'#5c2e0a'},{name:'Maroon',hex:'#6e1a1a'},{name:'Purple',hex:'#4a1060'},
+  {name:'Red',hex:'#aa1515'},{name:'Pink',hex:'#e08090'},{name:'Amber',hex:'#c87820'},
+  {name:'Gold',hex:'#d4a820'},{name:'Straw',hex:'#e8d870'},{name:'Clear',hex:'#c8c4be'}
+];
+const LABELS = [
+  'HEAT/\nABV','DARK\nFRUIT','TROPICAL\nFRUIT','HERBAL/\nGRASSY',
+  'FLORAL','SPICY','TANNIC','WOODY','MINERAL','SWEET',
+  'SOUR/\nTART','BODY','LEGS','BALANCE','LINGER/\nFINISH','NOSE'
+];
+const N=16, RINGS=5;
+
+let entries = JSON.parse(localStorage.getItem('wine_entries')||'[]');
+let currentScreen = 'cellar';
+let form = {};
+let rating = 0;
+let selectedColor = null;
+let wheelVals = new Array(16).fill(0);
+let detailEntry = null;
+let dragging = false;
+
+function save(e){ entries=e; localStorage.setItem('wine_entries',JSON.stringify(e)); }
+
+// ===== NAVIGATION =====
+function go(scr) {
+  currentScreen = scr;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
+  const nb = document.getElementById('nav-'+scr);
+  if(nb) nb.classList.add('on');
+  const hb = document.getElementById('headerBtn');
+
+  if(scr==='cellar'){
+    hb.textContent='+'; hb.style.background='var(--accent)';
+    hb.onclick=startNew;
+    renderCellar();
+  } else if(scr==='taste'){
+    hb.textContent='‹'; hb.style.background='var(--surface)';
+    hb.style.border='1px solid var(--border)'; hb.style.color='var(--text2)';
+    hb.onclick=()=>go('cellar');
+    renderTaste();
+  } else if(scr==='detail'){
+    hb.textContent='‹'; hb.style.background='var(--surface)';
+    hb.style.border='1px solid var(--border)'; hb.style.color='var(--text2)';
+    hb.onclick=()=>go('cellar');
+    renderDetail();
+  }
+}
+
+function headerAction(){ startNew(); }
+
+function startNew(){
+  form={grape:'',winery:'',vintage:'',origin:'',price:'',
+    sampled:new Date().toISOString().split('T')[0],
+    appearance:'',nose:'',taste:'',finish:'',opinion:''};
+  rating=0; selectedColor=null; wheelVals=new Array(16).fill(0);
+  go('taste');
+}
+
+// ===== CELLAR =====
+function renderCellar(){
+  const s=document.getElementById('screen');
+  if(!entries.length){
+    s.innerHTML=`<div class="sec-lbl">My Cellar</div>
+    <div class="empty"><div class="empty-ico">🍷</div>
+    <div class="empty-txt">No wines yet<br>Tap + to add your first</div></div>`;
+    return;
+  }
+  s.innerHTML=`<div class="sec-lbl">My Cellar — ${entries.length} ${entries.length===1?'wine':'wines'}</div>`+
+  entries.map((e,i)=>`
+    <div class="ec" onclick="openDetail(${i})">
+      <div class="ec-bar"></div>
+      <div class="ec-dot" style="background:${e.color?e.color.hex:'#555'}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="ec-name">${e.winery||e.grape||'Unknown'}${e.vintage?` · ${e.vintage}`:''}</div>
+        <div class="ec-meta">${[e.grape,e.origin].filter(Boolean).join(' · ')||'No details'}${e.sampled?` · ${e.sampled}`:''}</div>
+      </div>
+      <div class="ec-stars">${'★'.repeat(e.rating)}</div>
+    </div>`).join('');
+}
+
+function openDetail(i){
+  detailEntry=i;
+  go('detail');
+}
+
+// ===== DETAIL =====
+function renderDetail(){
+  const e=entries[detailEntry];
+  const s=document.getElementById('screen');
+  const fields=[['Grape/Varietal',e.grape],['Winery',e.winery],['Vintage',e.vintage],
+    ['Origin',e.origin],['Price',e.price],['Sampled',e.sampled],
+    ['Rating',e.rating?'★'.repeat(e.rating):null],['Color',e.color?.name],
+    ['Appearance',e.appearance],['Nose',e.nose],['Taste',e.taste],
+    ['Finish',e.finish],['Opinion',e.opinion]].filter(([,v])=>v);
+
+  s.innerHTML=`
+    <div style="margin-bottom:16px">
+      <div style="font-family:'Playfair Display',serif;font-style:italic;font-size:20px;color:var(--text)">${e.winery||e.grape||'Wine'}</div>
+    </div>
+    ${fields.map(([l,v])=>`<div class="df"><div class="df-lbl">${l}</div><div class="df-val">${v}</div></div>`).join('')}
+    <div class="sec-lbl" style="margin-top:16px;margin-bottom:8px">Flavor Profile</div>
+    <div class="ww"><canvas id="detailCanvas" width="280" height="280" style="max-width:100%"></canvas></div>
+    <button class="del-btn" onclick="deleteEntry(${detailEntry})">Delete Entry</button>`;
+
+  setTimeout(()=>drawWheelOn('detailCanvas', e.wheel||new Array(16).fill(0), true), 50);
+}
+
+function deleteEntry(i){
+  if(!confirm('Delete this entry?')) return;
+  entries.splice(i,1); save(entries);
+  go('cellar'); showToast('Entry deleted');
+}
+
+// ===== TASTE FORM =====
+function renderTaste(){
+  const s=document.getElementById('screen');
+  s.innerHTML=`
+  <div class="sec-lbl">Wine Info</div>
+  <div class="fg">
+    <div class="fr"><span class="fl">Grape</span><input class="fi" id="f-grape" type="text" autocomplete="off" value="" placeholder="Grape..."></div>
+    <div class="fr"><span class="fl">Winery</span><input class="fi" id="f-winery" type="text" autocomplete="off" value="" placeholder="Winery..."></div>
+    <div class="fr"><span class="fl">Vintage</span><input class="fi" id="f-vintage" type="text" autocomplete="off" value="" placeholder="Year..."></div>
+    <div class="fr"><span class="fl">Origin</span><input class="fi" id="f-origin" type="text" autocomplete="off" value="" placeholder="Region..."></div>
+    <div class="fr"><span class="fl">Price</span><input class="fi" id="f-price" type="text" autocomplete="off" value="" placeholder="Price..."></div>
+    <div class="fr"><span class="fl">Sampled</span><input class="fi" id="f-sampled" type="text" autocomplete="off" value="" placeholder="Date..."></div>
+  </div>
+
+  <div class="sec-lbl">Rating</div>
+  <div class="fg" style="margin-bottom:20px">
+    <div style="display:flex;gap:10px;padding:12px 16px" id="starsRow">
+      ${[1,2,3,4,5].map(n=>`<span class="star" data-n="${n}" onclick="setRating(${n})" style="color:${n<=rating?'var(--accent2)':'var(--text3)'}">${n<=rating?'★':'☆'}</span>`).join('')}
+    </div>
+  </div>
+
+  <div class="sec-lbl">Tasting Notes</div>
+  <div class="fg">
+    <div class="fr"><span class="fl">Appearance</span><input class="fi" id="f-appearance" type="text" autocomplete="off" value="" placeholder="Appearance..."></div>
+    <div class="fr"><span class="fl">Nose</span><input class="fi" id="f-nose" type="text" autocomplete="off" value="" placeholder="Nose..."></div>
+    <div class="fr"><span class="fl">Taste</span><input class="fi" id="f-taste" type="text" autocomplete="off" value="" placeholder="Taste..."></div>
+    <div class="fr"><span class="fl">Finish</span><input class="fi" id="f-finish" type="text" autocomplete="off" value="" placeholder="Finish..."></div>
+    <div class="fr" style="align-items:flex-start">
+      <span class="fl" style="padding-top:14px">Opinion</span>
+      <textarea class="fi" id="f-opinion" placeholder="Overall impression..."></textarea>
+    </div>
+  </div>
+
+  <div class="sec-lbl">Color</div>
+  <div class="cg">
+    ${COLORS.map(c=>`<div class="ct${selectedColor?.name===c.name?' sel':''}" onclick="selectColor('${c.name}','${c.hex}',this)">
+      <div class="cb" style="background:${c.hex}"></div>
+      <span class="cn">${c.name}</span></div>`).join('')}
+  </div>
+
+  <div class="sec-lbl">Flavor Wheel — Drag each axis</div>
+  <div class="ww"><canvas id="wheelCanvas" width="300" height="300" style="max-width:100%;cursor:crosshair"></canvas></div>
+  <div class="w-hint">TAP OR DRAG ALONG EACH AXIS</div>
+  <button class="reset" onclick="wheelVals=new Array(16).fill(0);drawWheelOn('wheelCanvas',wheelVals,false)">Reset Wheel</button>
+
+  <button class="save-btn" onclick="saveEntry()">Save to Cellar 🍷</button>`;
+
+  setTimeout(()=>{
+    initWheelInteraction('wheelCanvas');
+    drawWheelOn('wheelCanvas', wheelVals, false);
+  },50);
+}
+
+function setRating(n){
+  rating=n;
+  document.querySelectorAll('#starsRow .star').forEach(s=>{
+    const sn=+s.dataset.n;
+    s.textContent=sn<=n?'★':'☆';
+    s.style.color=sn<=n?'var(--accent2)':'var(--text3)';
+  });
+}
+
+function selectColor(name,hex,el){
+  selectedColor={name,hex};
+  document.querySelectorAll('.ct').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
+  el.querySelector('.cn').style.color='var(--accent2)';
+}
+
+function saveEntry(){
+  // Read ALL values directly from DOM inputs at save time
+  const keys=['grape','winery','vintage','origin','price','sampled','appearance','nose','taste','finish','opinion'];
+  keys.forEach(k=>{
+    const el=document.getElementById('f-'+k);
+    if(el) form[k]=el.value.trim();
+  });
+  // Save regardless - no validation blocking
+  const name = form.winery||form.grape||form.vintage||'Wine Entry';
+  const entry={id:Date.now(),...form,rating,color:selectedColor,wheel:[...wheelVals]};
+  entries.unshift(entry);
+  localStorage.setItem('wine_entries',JSON.stringify(entries));
+  showToast('Saved 🍷');
+  setTimeout(()=>go('cellar'),600);
+}
+
+// ===== WHEEL =====
+function drawWheelOn(canvasId, vals, readOnly){
+  const c=document.getElementById(canvasId); if(!c) return;
+  const ctx=c.getContext('2d');
+  const size=c.offsetWidth||300;
+  c.width=size; c.height=size;
+  const cx=size/2,cy=size/2,maxR=size*.34,minR=size*.05;
+  ctx.clearRect(0,0,size,size);
+  for(let r=1;r<=RINGS;r++){
+    ctx.beginPath();ctx.arc(cx,cy,minR+(r/RINGS)*(maxR-minR),0,Math.PI*2);
+    ctx.strokeStyle='rgba(200,180,140,0.18)';ctx.lineWidth=.8;ctx.stroke();
+  }
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2-Math.PI/2;
+    ctx.beginPath();ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*maxR,cy+Math.sin(a)*maxR);
+    ctx.strokeStyle='rgba(200,180,140,0.15)';ctx.lineWidth=.8;ctx.stroke();
+  }
+  ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2-Math.PI/2;
+    const r=minR+(vals[i]/RINGS)*(maxR-minR);
+    i===0?ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r):ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+  }
+  ctx.closePath();
+  ctx.fillStyle='rgba(155,35,53,0.3)';ctx.fill();
+  ctx.strokeStyle='rgba(200,150,62,.9)';ctx.lineWidth=1.5;ctx.stroke();
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2-Math.PI/2;
+    const r=minR+(vals[i]/RINGS)*(maxR-minR);
+    ctx.beginPath();ctx.arc(cx+Math.cos(a)*r,cy+Math.sin(a)*r,3.5,0,Math.PI*2);
+    ctx.fillStyle='#c8963e';ctx.fill();
+  }
+  ctx.font=`bold ${Math.max(7,size*.032)}px monospace`;
+  ctx.fillStyle='rgba(232,224,212,0.75)';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let i=0;i<N;i++){
+    const a=(i/N)*Math.PI*2-Math.PI/2;
+    const lr=maxR+size*.088;
+    const lx=cx+Math.cos(a)*lr,ly=cy+Math.sin(a)*lr;
+    const lines=LABELS[i].split('\n');
+    lines.forEach((line,j)=>ctx.fillText(line,lx,ly+(j-(lines.length-1)/2)*(size*.038)));
+  }
+  ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle='#c8963e';ctx.fill();
+}
+
+function hitAxis(canvasId,clientX,clientY){
+  const c=document.getElementById(canvasId); if(!c) return null;
+  const rect=c.getBoundingClientRect();
+  const size=c.width;
+  const mx=(clientX-rect.left)*(size/rect.width);
+  const my=(clientY-rect.top)*(size/rect.height);
+  const cx=size/2,cy=size/2,maxR=size*.34,minR=size*.05;
+  const dx=mx-cx,dy=my-cy,dist=Math.sqrt(dx*dx+dy*dy);
+  if(dist<5) return null;
+  let angle=Math.atan2(dy,dx)+Math.PI/2;
+  if(angle<0) angle+=Math.PI*2;
+  let best=0,bestDiff=Infinity;
+  for(let i=0;i<N;i++){
+    let a=(i/N)*Math.PI*2;
+    let diff=Math.abs(angle-a);
+    if(diff>Math.PI) diff=Math.PI*2-diff;
+    if(diff<bestDiff){bestDiff=diff;best=i;}
+  }
+  if(bestDiff>Math.PI/N) return null;
+  const v=Math.max(0,Math.min(RINGS,Math.round((dist-minR)/(maxR-minR)*RINGS)));
+  return{axis:best,val:v};
+}
+
+function initWheelInteraction(canvasId){
+  const c=document.getElementById(canvasId); if(!c) return;
+  const handle=(cx,cy)=>{
+    const h=hitAxis(canvasId,cx,cy);
+    if(h){wheelVals[h.axis]=h.val;drawWheelOn(canvasId,wheelVals,false);}
+  };
+  c.addEventListener('mousedown',e=>{dragging=true;handle(e.clientX,e.clientY);});
+  c.addEventListener('mousemove',e=>{if(dragging)handle(e.clientX,e.clientY);});
+  c.addEventListener('mouseup',()=>dragging=false);
+  c.addEventListener('touchstart',e=>{e.preventDefault();dragging=true;handle(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  c.addEventListener('touchmove',e=>{e.preventDefault();if(dragging)handle(e.touches[0].clientX,e.touches[0].clientY);},{passive:false});
+  c.addEventListener('touchend',()=>dragging=false);
+}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ===== INIT =====
+go('cellar');
+</script>
+</body>
+</html>
