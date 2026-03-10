@@ -2,14 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Sommelier">
 <meta name="theme-color" content="#9b2335">
-<link rel="manifest" href="/Carpe_Mori_Wine/manifest.json">
-<link rel="apple-touch-icon" href="/Carpe_Mori_Wine/icon-192.png">
+
+
 <title>Sommelier — Wine Journal</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400;1,600&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -145,30 +148,7 @@ canvas{touch-action:none}
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== PWA =====
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/Carpe_Mori_Wine/sw.js', {scope: '/Carpe_Mori_Wine/'});
-}
-
 let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById('installBar').style.display = 'flex';
-});
-
-document.getElementById('installBtn').addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('installBar').style.display = 'none';
-});
-
-window.addEventListener('appinstalled', () => {
-  document.getElementById('installBar').style.display = 'none';
-  showToast('App installed! 🍷');
-});
 
 // ===== STATE =====
 const COLORS = [
@@ -354,19 +334,27 @@ function selectColor(name,hex,el){
 }
 
 function saveEntry(){
-  // Read ALL values directly from DOM inputs at save time
-  const keys=['grape','winery','vintage','origin','price','sampled','appearance','nose','taste','finish','opinion'];
-  keys.forEach(k=>{
-    const el=document.getElementById('f-'+k);
-    if(el) form[k]=el.value.trim();
-  });
-  // Save regardless - no validation blocking
-  const name = form.winery||form.grape||form.vintage||'Wine Entry';
-  const entry={id:Date.now(),...form,rating,color:selectedColor,wheel:[...wheelVals]};
-  entries.unshift(entry);
-  localStorage.setItem('wine_entries',JSON.stringify(entries));
+  var data = {
+    id: Date.now(),
+    grape: (document.getElementById('f-grape')||{}).value || '',
+    winery: (document.getElementById('f-winery')||{}).value || '',
+    vintage: (document.getElementById('f-vintage')||{}).value || '',
+    origin: (document.getElementById('f-origin')||{}).value || '',
+    price: (document.getElementById('f-price')||{}).value || '',
+    sampled: (document.getElementById('f-sampled')||{}).value || '',
+    appearance: (document.getElementById('f-appearance')||{}).value || '',
+    nose: (document.getElementById('f-nose')||{}).value || '',
+    taste: (document.getElementById('f-taste')||{}).value || '',
+    finish: (document.getElementById('f-finish')||{}).value || '',
+    opinion: (document.getElementById('f-opinion')||{}).value || '',
+    rating: rating,
+    color: selectedColor,
+    wheel: wheelVals.slice()
+  };
+  entries.unshift(data);
+  try { localStorage.setItem('wine_entries', JSON.stringify(entries)); } catch(e){}
   showToast('Saved 🍷');
-  setTimeout(()=>go('cellar'),600);
+  setTimeout(function(){ go('cellar'); }, 600);
 }
 
 // ===== WHEEL =====
