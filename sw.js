@@ -1,19 +1,12 @@
-const CACHE = "sommelier-v1775069105";
-
-self.addEventListener("install", e => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", e => {
+// Self-destructing service worker
+// Deletes all caches and unregisters itself permanently
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
-    )
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.matchAll())
+      .then(clients => clients.forEach(c => c.navigate(c.url)))
   );
-  self.clients.claim();
-});
-
-// Always fetch fresh - no caching at all
-self.addEventListener("fetch", e => {
-  e.respondWith(fetch(e.request));
 });

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- v1775069105 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -179,25 +178,44 @@ if (isIos && !isInStandaloneMode) {
   document.getElementById('iosBar').style.display = 'flex';
 }
 
+// ===== AUTO-UPDATE SYSTEM =====
+// Kill ALL service workers permanently
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    // Check for updates every time page loads
-    reg.update();
-    // When new SW is waiting, activate it immediately
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // New version available - reload automatically
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            window.location.reload();
-          });
-          newWorker.postMessage({type: 'SKIP_WAITING'});
-        }
-      });
-    });
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(reg => reg.unregister());
   });
+  // Also clear every cache
+  if ('caches' in window) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+  }
 }
+
+// Every 60 seconds fetch a tiny version file from GitHub
+// If it differs from current version, silently reload the page
+// This means updates appear within 1 minute automatically, no cache clearing needed
+const CURRENT_VERSION = '1775070185';
+const VERSION_URL = './version.txt';
+
+function checkForUpdate() {
+  fetch(VERSION_URL + '?t=' + Date.now(), {cache: 'no-store'})
+    .then(r => r.text())
+    .then(v => {
+      const latest = v.trim();
+      const stored = localStorage.getItem('app_version');
+      if (stored && stored !== latest) {
+        // New version available - save wines first, then reload
+        localStorage.setItem('app_version', latest);
+        window.location.reload(true);
+      } else {
+        localStorage.setItem('app_version', latest);
+      }
+    })
+    .catch(() => {}); // silently fail if offline
+}
+
+// Check on load and every 60 seconds
+checkForUpdate();
+setInterval(checkForUpdate, 60000);
 
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
