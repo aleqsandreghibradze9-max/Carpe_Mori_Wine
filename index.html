@@ -123,6 +123,12 @@ canvas{touch-action:none}
     <button class="x" onclick="document.getElementById('installBar').style.display='none'">×</button>
   </div>
 
+  <!-- iOS INSTALL BANNER -->
+  <div class="install-bar" id="iosBar" style="display:none;background:#1e1b18;">
+    <span style="font-size:11px;line-height:1.5">📲 To install: tap <strong style="color:#c8963e">Share ↑</strong> then <strong style="color:#c8963e">"Add to Home Screen"</strong></span>
+    <button class="x" onclick="document.getElementById('iosBar').style.display='none'">×</button>
+  </div>
+
   <!-- HEADER -->
   <div class="hdr">
     <div>
@@ -153,6 +159,13 @@ canvas{touch-action:none}
 <div class="toast" id="toast"></div>
 
 <script>
+// Show iOS install hint
+const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+const isInStandaloneMode = ('standalone' in navigator) && navigator.standalone;
+if (isIos && !isInStandaloneMode) {
+  document.getElementById('iosBar').style.display = 'flex';
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(reg => {
     // Check for updates every time page loads
@@ -194,11 +207,6 @@ window.addEventListener('appinstalled', () => {
 });
 
 // ===== STATE =====
-const COLORS = [
-  {name:'Brown',hex:'#5c2e0a'},{name:'Maroon',hex:'#6e1a1a'},{name:'Purple',hex:'#4a1060'},
-  {name:'Red',hex:'#aa1515'},{name:'Pink',hex:'#e08090'},{name:'Amber',hex:'#c87820'},
-  {name:'Gold',hex:'#d4a820'},{name:'Straw',hex:'#e8d870'},{name:'Clear',hex:'#c8c4be'}
-];
 const LABELS = [
   'HEAT/\nABV','DARK\nFRUIT','TROPICAL\nFRUIT','HERBAL/\nGRASSY',
   'FLORAL','SPICY','TANNIC','WOODY','MINERAL','SWEET',
@@ -248,7 +256,7 @@ function headerAction(){ startNew(); }
 function startNew(){
   form={grape:'',winery:'',vintage:'',origin:'',price:'',
     sampled:new Date().toISOString().split('T')[0],
-    appearance:'',nose:'',taste:'',finish:'',opinion:''};
+    appearance:'',nose:'',taste:'',finish:'',opinion:'',color:''};
   rating=0; selectedColor=null; wheelVals=new Array(16).fill(0);
   editingIndex=-1;
   go('taste');
@@ -267,7 +275,7 @@ function renderCellar(){
   entries.map((e,i)=>`
     <div class="ec" onclick="openDetail(${i})">
       <div class="ec-bar"></div>
-      <div class="ec-dot" style="background:${e.color?e.color.hex:'#555'}"></div>
+      <div class="ec-dot" style="background:var(--accent2)"></div>
       <div style="flex:1;min-width:0">
         <div class="ec-name">${e.winery||e.grape||'Unknown'}${e.vintage?` · ${e.vintage}`:''}</div>
         <div class="ec-meta">${[e.grape,e.origin].filter(Boolean).join(' · ')||'No details'}${e.sampled?` · ${e.sampled}`:''}</div>
@@ -287,7 +295,7 @@ function renderDetail(){
   const s=document.getElementById('screen');
   const fields=[['Grape/Varietal',e.grape],['Winery',e.winery],['Vintage',e.vintage],
     ['Origin',e.origin],['Price',e.price],['Sampled',e.sampled],
-    ['Rating',e.rating?'★'.repeat(e.rating):null],['Color',e.color?.name],
+    ['Rating',e.rating?'★'.repeat(e.rating):null],
     ['Appearance',e.appearance],['Nose',e.nose],['Taste',e.taste],
     ['Finish',e.finish],['Opinion',e.opinion]].filter(([,v])=>v);
 
@@ -320,7 +328,7 @@ function editEntry(i){
     finish: e.finish||'', opinion: e.opinion||''
   };
   rating = e.rating||0;
-  selectedColor = e.color||null;
+  selectedColor = null;
   wheelVals = e.wheel ? e.wheel.slice() : new Array(16).fill(0);
   editingIndex = i;
   go('taste');
@@ -359,12 +367,7 @@ function renderTaste(){
     </div>
   </div>
 
-  <div class="sec-lbl">Color</div>
-  <div class="cg">
-    ${COLORS.map(c=>`<div class="ct${selectedColor?.name===c.name?' sel':''}" onclick="selectColor('${c.name}','${c.hex}',this)">
-      <div class="cb" style="background:${c.hex}"></div>
-      <span class="cn">${c.name}</span></div>`).join('')}
-  </div>
+
 
   <div class="sec-lbl">Flavor Wheel — Drag each axis</div>
   <div class="ww"><canvas id="wheelCanvas" width="300" height="300" style="max-width:100%;cursor:crosshair"></canvas></div>
@@ -395,13 +398,6 @@ function setRating(n){
   });
 }
 
-function selectColor(name,hex,el){
-  selectedColor={name,hex};
-  document.querySelectorAll('.ct').forEach(t=>t.classList.remove('sel'));
-  el.classList.add('sel');
-  el.querySelector('.cn').style.color='var(--accent2)';
-}
-
 function saveEntry(){
   var data = {
     id: editingIndex>=0 ? entries[editingIndex].id : Date.now(),
@@ -417,7 +413,6 @@ function saveEntry(){
     finish: (document.getElementById('f-finish')||{}).value || '',
     opinion: (document.getElementById('f-opinion')||{}).value || '',
     rating: rating,
-    color: selectedColor,
     wheel: wheelVals.slice()
   };
   if(editingIndex>=0){
